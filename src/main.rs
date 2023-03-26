@@ -16,6 +16,7 @@ use memmap2::Mmap;
 use anyhow::{anyhow, bail, Context, Result};
 
 use crate::args::{Options, Command, SymbolsArgs};
+use crate::eh::eh;
 use crate::func::do_fn;
 use crate::header::{header, program_headers};
 use crate::print::{PairTable, print_header, SizePrint};
@@ -29,6 +30,7 @@ mod func;
 mod sym;
 mod header;
 mod elf;
+mod eh;
 
 fn main() {
     let args = Options::parse();
@@ -71,6 +73,7 @@ fn run(args: &Options) -> Result<()> {
         Command::Section(opts) => one_section(&elf, bytes, opts)?,
         Command::Symbols(opts) => all_symbols(&elf, opts),
         Command::Fn(opts) => do_fn(&elf, bytes, opts)?,
+        Command::Eh(opts) => eh(&elf, bytes, opts.clone())?,
         _ => todo!(),
     }
 

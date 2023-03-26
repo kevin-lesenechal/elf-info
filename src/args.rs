@@ -49,6 +49,9 @@ pub enum Command {
 
     /// List all relocation entries.
     Relocations,
+
+    /// Display call frame information for exception handling.
+    Eh(EhArgs),
 }
 
 #[derive(Args, Debug)]
@@ -98,4 +101,21 @@ pub struct SectionArgs {
 pub struct FnArgs {
     #[arg()]
     pub name: String,
+}
+
+#[derive(Args, Debug, Clone, Default)]
+pub struct EhArgs {
+    /// A specific section name to parse for call frame information entries.
+    /// If none is specified, elf-info will look for a `.eh_frame` section, or
+    /// `.debug_frame` section.
+    #[arg(long)]
+    pub section: Option<String>,
+
+    /// Only display FDEs that contains the address of this symbol.
+    #[arg(long, short = 's')]
+    pub symbol: Option<String>,
+
+    /// Only display FDEs that contains this address.
+    #[arg(long)]
+    pub address: Option<u64>,
 }
