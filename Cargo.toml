@@ -1,0 +1,32 @@
+##############################################################################
+# Copyright © 2023 Kévin Lesénéchal <kevin.lesenechal@gmail.com>             #
+# This file is part of the elf-info CLI tool.                                #
+#                                                                            #
+# elf-info is free software; you can redistribute it and/or modify it under  #
+# the terms of the GNU General Public License as published by the Free       #
+# Software Foundation; either version 3 of the License, or (at your option)  #
+# any later version. See LICENSE file for more information.                  #
+##############################################################################
+
+[package]
+name = "elf-info"
+version = "0.1.0"
+description = "Inspect and dissect an ELF file with pretty formatting."
+authors = ["Kévin Lesénéchal <kevin.lesenechal@gmail.com>"]
+edition = "2021"
+license = "GPL-3.0"
+
+[[bin]]
+name = "elf"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.0", features = ["derive"] }
+goblin = { version = "0.6.1", features = ["elf64"] }
+gimli = "0.27.2"
+anyhow = "1.0"
+memmap2 = "0.5.7"
+rustc-demangle = "0.1.21"
+regex = "1.6"
+iced-x86 = "1.17"
+byteorder = "1.4.3"
