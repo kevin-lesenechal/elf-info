@@ -29,9 +29,11 @@ pub enum Command {
     Summary,
 
     /// Display information in ELF's header.
+    #[clap(alias = "h")]
     Header,
 
     /// List all program headers.
+    #[clap(alias = "ph")]
     ProgramHeader,
 
     /// List all sections.
@@ -39,15 +41,18 @@ pub enum Command {
 
     /// Display detailed information of one specific section, including its
     /// content. The formatting used depends on the type of section.
+    #[clap(alias = "sh")]
     Section(SectionArgs),
 
     /// List all symbols.
+    #[clap(alias = "sym")]
     Symbols(SymbolsArgs),
 
     /// Disassemble a function.
     Fn(FnArgs),
 
     /// List all relocation entries.
+    #[clap(alias = "rel")]
     Relocations,
 
     /// Display call frame information for exception handling.
