@@ -112,16 +112,15 @@ pub fn program_headers(elf: &Elf) {
     };
 
     println!(
-        "\x1b[37m{:>12} \x1b[97m│ \x1b[37m{:<w1$} \x1b[97m│ \x1b[37m{:<w1$} \x1b[97m│ \x1b[37m{:<8}\x1b[0m",
-        "Type", "Virt. addr.", "Phys. addr.", "Flags",
+        "\x1b[37m{:>12} \x1b[97m│ \x1b[37m{:<w1$} \x1b[97m│ \x1b[37m{:<w1$} \x1b[97m│ \x1b[37m{:<colw$} \x1b[97m│\x1b[0m",
+        "Type", "Virt. addr.", "Phys. addr.", "Flags     Align",
         w1 = colw + 1,
     );
     println!(
-        "\x1b[37m{:<12} \x1b[97m│ \x1b[37m{:<w1$} \x1b[97m│ \x1b[37m{:<w1$}\x1b[0m \x1b[97m│ \x1b[37m{:<w1$}",
+        "\x1b[37m{:<12} \x1b[97m│ \x1b[37m{:<w1$} \x1b[97m│ \x1b[37m{:<w1$}\x1b[0m \x1b[97m│ \x1b[37m{:<colw$} \x1b[97m│",
         "", "Memory size", "In-ELF size", "In-ELF off.",
         w1 = colw + 1,
     );
-    println!("\x1b[97m{0:─<13}┼{0:─<w$}┼{0:─<w$}┼\x1b[0m", "", w = colw + 3);
 
     for ph in elf.program_headers.iter() {
         let typ = match pt_to_str(ph.p_type) {
@@ -130,15 +129,30 @@ pub fn program_headers(elf: &Elf) {
         };
 
         println!(
-            "{typ:>12} \x1b[97m│\x1b[0m {vaddr} \x1b[97m╶┼>\x1b[0m {paddr}",
+            "\x1b[97m{0:─<13}┼{0:─<w$}┼{0:─<w$}┼{0:─<w2$}┤\x1b[0m",
+            "", w = colw + 3, w2 = colw + 2
+        );
+        print!(
+            "{typ:>12} \x1b[97m│\x1b[0m {vaddr} \x1b[97m╶┼>\x1b[0m {paddr} ",
             vaddr = sp.hex(ph.p_vaddr),
             paddr = sp.hex(ph.p_paddr),
         );
         println!(
-            "\x1b[4m{:>12} \x1b[97m│\x1b[0;4m {msize}  \x1b[97m│\x1b[0;4m  {fsize}\x1b[0m",
+            "\x1b[97m│\x1b[0m {}{}{}       2^{:<7} \x1b[97m│\x1b[0m",
+            if ph.is_read() { "r" } else { "-" },
+            if ph.is_write() { "w" } else { "-" },
+            if ph.is_executable() { "x" } else { "-" },
+            64 - ph.p_align.leading_zeros() - 1,
+        );
+        print!(
+            "{:>12} \x1b[97m│\x1b[0m {msize}  \x1b[97m│\x1b[0m  {fsize} ",
             "",
             msize = sp.hex(ph.p_memsz),
             fsize = sp.hex(ph.p_filesz),
+        );
+        println!(
+            "\x1b[97m│\x1b[0m {foff} \x1b[97m│\x1b[0m",
+            foff = sp.hex(ph.p_offset),
         );
     }
 }
