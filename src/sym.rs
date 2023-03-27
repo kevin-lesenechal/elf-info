@@ -48,7 +48,8 @@ pub fn all_symbols(elf: &Elf, opts: &SymbolsArgs) {
     for sym in syms.iter() {
         if (opts.global && sym.st_bind() != STB_GLOBAL)
             || (opts.local && sym.st_bind() != STB_LOCAL)
-            || (opts.weak && sym.st_bind() != STB_WEAK) {
+            || (opts.weak && sym.st_bind() != STB_WEAK)
+            || (opts.visible && sym.st_visibility() != STV_DEFAULT){
             continue;
         } else if let Some(ref filt_type) = opts.r#type {
             if filt_type.to_st_type() != sym.st_type() {

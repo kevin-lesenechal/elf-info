@@ -89,6 +89,10 @@ pub struct SymbolsArgs {
     #[arg(long, short = 'w')]
     pub weak: bool,
 
+    /// Only display symbols with default visibility.
+    #[arg(long, short = 'v')]
+    pub visible: bool,
+
     /// Only display symbols of a specific type.
     #[arg(long, short = 't')]
     pub r#type: Option<SymbolType>,
