@@ -77,7 +77,7 @@ pub fn all_symbols(elf: &Elf, opts: &SymbolsArgs) {
             _ => "    ",
         };
         let vis = match sym.st_visibility() {
-            STV_DEFAULT => "\x1b[32m+\x1b[0m",
+            STV_DEFAULT => "+",
             STV_INTERNAL => "i",
             STV_HIDDEN => "\x1b[31m−\x1b[0m",
             STV_PROTECTED => "\x1b[33m#\x1b[0m",
@@ -87,12 +87,12 @@ pub fn all_symbols(elf: &Elf, opts: &SymbolsArgs) {
             _ => "?",
         };
         let bind = match sym.st_bind() {
-            STB_LOCAL => "\x1b[90mL\x1b[0m",
+            STB_LOCAL => "\x1b[90ml\x1b[0m",
             STB_GLOBAL => if defined { "\x1b[97mG\x1b[0m" }
             else { "\x1b[91mU\x1b[0m" },
             STB_WEAK => "\x1b[36mW\x1b[0m",
             STB_NUM => "\x1b[35mN\x1b[0m",
-            STB_GNU_UNIQUE => "\x1b[31mU\x1b[0m",
+            STB_GNU_UNIQUE => "\x1b[31mu\x1b[0m",
             _ => "\x1b[93m?\x1b[0m",
         };
         let size = match sym.st_size {
@@ -109,6 +109,16 @@ pub fn all_symbols(elf: &Elf, opts: &SymbolsArgs) {
             v = sp.hex(sym.st_value),
         );
     }
+
+    println!();
+    println!("\x1b[97mVisibility [V]:        Binding [B]:\x1b[0m");
+    println!("  +  Default             \x1b[90ml\x1b[0m  Local");
+    println!("  \x1b[33m#\x1b[0m  Protected           \x1b[97mG\x1b[0m  Global");
+    println!("  \x1b[31m−\x1b[0m  Hidden              \x1b[91mU\x1b[0m  Global (undefined)");
+    println!("  i  Internal            \x1b[36mW\x1b[0m  Weak");
+    println!("  x  Exported            \x1b[35mN\x1b[0m  Number of defined types");
+    println!("  s  Singleton           \x1b[31mu\x1b[0m  GNU unique");
+    println!("  e  Eliminate");
 }
 
 fn is_std_sym(sym: &str) -> bool {
