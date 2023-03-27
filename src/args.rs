@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 use std::path::PathBuf;
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use regex::Regex;
 
 #[derive(Parser, Debug)]
@@ -76,6 +76,50 @@ pub struct SymbolsArgs {
     /// Only show symbols that matches a PCRE regex.
     #[arg(short = 'f', long)]
     pub filter: Option<Regex>,
+
+    /// Only display local symbols.
+    #[arg(long, short = 'l')]
+    pub local: bool,
+
+    /// Only display global symbols, this includes undefined symbols.
+    #[arg(long, short = 'g')]
+    pub global: bool,
+
+    /// Only display weak symbols.
+    #[arg(long, short = 'w')]
+    pub weak: bool,
+
+    /// Only display symbols of a specific type.
+    #[arg(long, short = 't')]
+    pub r#type: Option<SymbolType>,
+}
+
+#[derive(Clone, ValueEnum, Debug)]
+pub enum SymbolType {
+    None,
+    Func,
+    Section,
+    Object,
+    File,
+    Common,
+    Tls,
+    Num,
+}
+
+impl SymbolType {
+    pub fn to_st_type(&self) -> u8 {
+        use goblin::elf::sym::*;
+        match self {
+            Self::None => STT_NOTYPE,
+            Self::Func => STT_FUNC,
+            Self::Section => STT_SECTION,
+            Self::Object => STT_OBJECT,
+            Self::File => STT_FILE,
+            Self::Common => STT_COMMON,
+            Self::Tls => STT_TLS,
+            Self::Num => STT_NUM,
+        }
+    }
 }
 
 #[derive(Args, Debug)]

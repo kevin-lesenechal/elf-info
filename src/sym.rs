@@ -46,6 +46,16 @@ pub fn all_symbols(elf: &Elf, opts: &SymbolsArgs) {
     );
 
     for sym in syms.iter() {
+        if (opts.global && sym.st_bind() != STB_GLOBAL)
+            || (opts.local && sym.st_bind() != STB_LOCAL)
+            || (opts.weak && sym.st_bind() != STB_WEAK) {
+            continue;
+        } else if let Some(ref filt_type) = opts.r#type {
+            if filt_type.to_st_type() != sym.st_type() {
+                continue;
+            }
+        }
+
         let name = strtab.get_at(sym.st_name).unwrap(); // TODO
         let name = if !opts.no_demangle {
             let s = demangle(name).to_string();
