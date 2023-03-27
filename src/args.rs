@@ -130,7 +130,7 @@ impl SymbolType {
 pub struct SectionArgs {
     /// The section name, starting with a period.
     #[arg()]
-    pub name: String,
+    pub name: Option<String>,
 
     /// Write the entire section's content into a file.
     #[arg(short = 'o', long)]

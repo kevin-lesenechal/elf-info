@@ -69,7 +69,11 @@ pub fn all_sections(elf: &Elf) {
 }
 
 pub fn one_section(elf: &Elf, bytes: &[u8], opts: &SectionArgs) -> Result<()> {
-    let name = &opts.name;
+    if opts.name.is_none() {
+        return Ok(all_sections(elf));
+    }
+
+    let name = opts.name.as_ref().unwrap();
     let sh = find_section(elf, name)
         .ok_or_else(|| anyhow!("couldn't find section {name:?}"))?;
 
