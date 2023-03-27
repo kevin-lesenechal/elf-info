@@ -37,11 +37,11 @@ pub fn all_symbols(elf: &Elf, opts: &SymbolsArgs) {
         Container::Little => 11,
     };
     println!(
-        "\x1b[97m{:>colw$} │ {:7} │ {}\x1b[0m",
-        "Value", "Type VB", "Name",
+        "\x1b[97m{:>colw$} │ {:7} │ {:10} │ {}\x1b[0m",
+        "Value", "Type VB", "Size", "Name",
     );
     println!(
-        "\x1b[97m{0:─<w$}┼{0:─<9}┼{0:─<60}\x1b[0m",
+        "\x1b[97m{0:─<w$}┼{0:─<9}┼{0:─<12}┼{0:─<60}\x1b[0m",
         "", w = colw + 1,
     );
 
@@ -95,13 +95,17 @@ pub fn all_symbols(elf: &Elf, opts: &SymbolsArgs) {
             STB_GNU_UNIQUE => "\x1b[31mU\x1b[0m",
             _ => "\x1b[93m?\x1b[0m",
         };
+        let size = match sym.st_size {
+            0 => "          ".to_string(),
+            n => format!("{n:#010x}"),
+        };
 
         if !defined {
             print!("\x1b[30m");
         }
 
         println!(
-            "{v} \x1b[97m│\x1b[0m {typ} {vis}{bind} \x1b[97m│\x1b[0m {name}",
+            "{v} \x1b[97m│\x1b[0m {typ} {vis}{bind} \x1b[97m│\x1b[0m {size} \x1b[97m│\x1b[0m {name}",
             v = sp.hex(sym.st_value),
         );
     }
