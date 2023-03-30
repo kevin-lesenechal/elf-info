@@ -10,7 +10,7 @@
 
 use std::collections::HashMap;
 use goblin::elf::Elf;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use goblin::container::Container;
 use goblin::elf::sym::STT_FUNC;
 use iced_x86::{Decoder, DecoderOptions, Formatter, FormatterOutput,
@@ -19,17 +19,23 @@ use iced_x86::{Decoder, DecoderOptions, Formatter, FormatterOutput,
 use rustc_demangle::demangle;
 
 use crate::args::FnArgs;
-use crate::elf::{find_symbol, symbol_file_offset};
+use crate::elf::{find_symbol, find_symbol_by_addr, symbol_file_offset};
 use crate::print::SizePrint;
 use crate::sym::sym_type;
 
 pub fn do_fn(elf: &Elf, bytes: &[u8], args: &FnArgs) -> Result<()> {
-    let sym = find_symbol(&elf.syms, &elf.strtab, &args.name)
-        .or_else(|| find_symbol(&elf.dynsyms, &elf.dynstrtab, &args.name))
-        .ok_or_else(||
-            anyhow!("couldn't find any symbol matching {:?}", args.name)
-        )?;
-    let sym_name = &args.name;
+    let sym = if args.address {
+        let addr = u64::from_str_radix(args.name.trim_start_matches("0x"), 16)
+            .context(anyhow!("couldn't parse memory address '{}'", args.name))?;
+        find_symbol_by_addr(&elf.syms, addr)
+    } else {
+        find_symbol(&elf.syms, &elf.strtab, &args.name)
+            .or_else(|| find_symbol(&elf.dynsyms, &elf.dynstrtab, &args.name))
+    }.ok_or_else(||
+        anyhow!("couldn't find any symbol matching {:?}", args.name)
+    )?;
+
+    let sym_name = elf.strtab.get_at(sym.st_name).unwrap();
 
     if sym.st_type() != STT_FUNC {
         println!(

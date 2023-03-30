@@ -26,6 +26,13 @@ pub fn find_symbol(tab: &Symtab, strtab: &Strtab, name: &str) -> Option<Sym> {
         })
 }
 
+pub fn find_symbol_by_addr(tab: &Symtab, addr: u64) -> Option<Sym> {
+    tab.iter()
+        .find(|sym| {
+            (sym.st_value..(sym.st_value + sym.st_size)).contains(&addr)
+        })
+}
+
 pub fn ph_by_vaddr<'a>(elf: &'a Elf, vaddr: u64) -> Option<&'a ProgramHeader> {
     elf.program_headers.iter()
         .find(|&ph| (ph.p_vaddr..(ph.p_vaddr + ph.p_memsz)).contains(&vaddr))

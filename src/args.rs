@@ -158,6 +158,11 @@ pub struct SectionArgs {
 pub struct FnArgs {
     #[arg()]
     pub name: String,
+
+    /// The parameter is a memory address, not a symbol name. The address is
+    /// always parsed as hexadecimal, and can start with `0x` or not.
+    #[arg(long, short = 'a')]
+    pub address: bool,
 }
 
 #[derive(Args, Debug, Clone, Default)]
