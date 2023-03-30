@@ -49,7 +49,8 @@ pub fn all_symbols(elf: &Elf, opts: &SymbolsArgs) {
         if (opts.global && sym.st_bind() != STB_GLOBAL)
             || (opts.local && sym.st_bind() != STB_LOCAL)
             || (opts.weak && sym.st_bind() != STB_WEAK)
-            || (opts.visible && sym.st_visibility() != STV_DEFAULT){
+            || (opts.visible && sym.st_visibility() != STV_DEFAULT)
+            || (opts.defined && sym.st_value == 0) {
             continue;
         } else if let Some(ref filt_type) = opts.r#type {
             if filt_type.to_st_type() != sym.st_type() {

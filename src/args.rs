@@ -65,7 +65,7 @@ pub struct SymbolsArgs {
     pub no_demangle: bool,
 
     /// Display dynamic symbols.
-    #[arg(short = 'd', long)]
+    #[arg(short = 'D', long)]
     pub dynamic: bool,
 
     /// Try to filter out symbols generated for the Rust's standard, core, and
@@ -92,6 +92,10 @@ pub struct SymbolsArgs {
     /// Only display symbols with default visibility.
     #[arg(long, short = 'v')]
     pub visible: bool,
+
+    /// Only display defined symbols.
+    #[arg(long, short = 'd')]
+    pub defined: bool,
 
     /// Only display symbols of a specific type.
     #[arg(long, short = 't')]
