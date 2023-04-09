@@ -15,6 +15,9 @@ description = "Inspect and dissect an ELF file with pretty formatting."
 authors = ["Kévin Lesénéchal <kevin.lesenechal@gmail.com>"]
 edition = "2021"
 license = "GPL-3.0"
+repository = "https://github.com/kevin-lesenechal/elf-info"
+categories = ["development-tools", "command-line-utilities"]
+keywords = ["elf", "disassembly", "objdump", "readelf"]
 
 [[bin]]
 name = "elf"
