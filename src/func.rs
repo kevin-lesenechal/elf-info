@@ -8,9 +8,13 @@
  * any later version. See LICENSE file for more information.                  *
  ******************************************************************************/
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use goblin::elf::Elf;
 use anyhow::{anyhow, Context, Result};
+use gimli::{BaseAddresses, CallFrameInstruction, EhFrame, EndianSlice,
+            FrameDescriptionEntry, LittleEndian, Register, SectionBaseAddresses,
+            UnwindSection};
 use goblin::container::Container;
 use goblin::elf::sym::STT_FUNC;
 use iced_x86::{Decoder, DecoderOptions, Formatter, FormatterOutput,
@@ -19,8 +23,10 @@ use iced_x86::{Decoder, DecoderOptions, Formatter, FormatterOutput,
 use rustc_demangle::demangle;
 
 use crate::args::FnArgs;
+use crate::eh::EhInstrContext;
 use crate::elf::{find_symbol, find_symbol_by_addr, symbol_file_offset};
 use crate::print::SizePrint;
+use crate::sections::find_section;
 use crate::sym::sym_type;
 
 pub fn do_fn(elf: &Elf, bytes: &[u8], args: &FnArgs) -> Result<()> {
@@ -53,7 +59,10 @@ pub fn do_fn(elf: &Elf, bytes: &[u8], args: &FnArgs) -> Result<()> {
     let content = &bytes[file_off..(file_off + sym.st_size as usize)];
 
     println!("\x1b[97m{sym_name}:\x1b[0m");
-    disassemble(elf, sym.st_value, content);
+
+    let mut opts = DisassOptions::default();
+    opts.cfi = args.cfi;
+    disassemble(elf, bytes, sym.st_value, content, opts);
 
     Ok(())
 }
@@ -105,7 +114,13 @@ impl FormatterOutput for ColorOutput {
     }
 }
 
-fn disassemble(elf: &Elf, ip: u64, content: &[u8]) {
+#[derive(Default)]
+struct DisassOptions {
+    intel_syntax: bool,
+    cfi: bool,
+}
+
+fn disassemble(elf: &Elf, bytes: &[u8], ip: u64, content: &[u8], opts: DisassOptions) {
     let container = elf.header.container().unwrap_or(Container::Big);
     let bitness = match container {
         Container::Big => 64,
@@ -133,7 +148,7 @@ fn disassemble(elf: &Elf, ip: u64, content: &[u8]) {
     });
 
     let mut output = ColorOutput;
-    let mut formatter: Box<dyn Formatter> = if false {
+    let mut formatter: Box<dyn Formatter> = if opts.intel_syntax {
         Box::new(IntelFormatter::with_options(
             Some(sym_resolver),
             None,
@@ -150,10 +165,16 @@ fn disassemble(elf: &Elf, ip: u64, content: &[u8]) {
     formatter.options_mut().set_space_between_memory_add_operators(true);
     formatter.options_mut().set_gas_space_after_memory_operand_comma(true);
 
+    let mut eh = opts.cfi.then(|| EhFnCtx::new(elf, bytes, ip)).flatten();
+
     while decoder.can_decode() {
         let instr = decoder.decode();
         let start_index = (instr.ip() - ip) as usize;
         let bytes = &content[start_index..(start_index + instr.len())];
+
+        if let Some(ref mut eh) = eh {
+            eh.at_ip(instr.ip());
+        }
 
         print!("{} \x1b[97m│\x1b[0m  ", sp.hex(instr.ip()));
 
@@ -178,5 +199,100 @@ fn disassemble(elf: &Elf, ip: u64, content: &[u8]) {
 
         formatter.format(&instr, &mut output);
         println!("\x1b[0m");
+    }
+}
+
+struct EhFnCtx<'a> {
+    base_addrs: &'static BaseAddresses,
+    eh: EhFrame<EndianSlice<'a, LittleEndian>>,
+    fde: FrameDescriptionEntry<EndianSlice<'a, LittleEndian>>,
+    instr_ctx: RefCell<EhInstrContext>,
+    curr_loc: RefCell<u64>,
+    cie_shown: bool,
+    instr_index: usize,
+}
+
+impl<'a> EhFnCtx<'a> {
+    fn new(elf: &Elf, bytes: &'a [u8], ip: u64) -> Option<Self> {
+        let container = elf.header.container().unwrap_or(Container::Big);
+        let sp = SizePrint::new(container);
+
+        let eh_frame = find_section(elf, ".eh_frame")?;
+        let eh = EhFrame::new(&bytes[eh_frame.file_range()?], LittleEndian);
+
+        let base_addrs = Box::leak(Box::new(BaseAddresses {
+            eh_frame_hdr: SectionBaseAddresses::default(),
+            eh_frame: SectionBaseAddresses {
+                section: Some(eh_frame.sh_addr),
+                text: None,
+                data: None,
+            },
+        }));
+
+        let fde = eh.fde_for_address(
+            &base_addrs,
+            ip,
+            |section, bases, offset| section.cie_from_offset(bases, offset),
+        ).ok()?;
+
+        let instr_ctx = EhInstrContext {
+            cfa_reg: Register(0),
+            cfa_off: 0,
+            loc: fde.initial_address(),
+            data_align: fde.cie().data_alignment_factor(),
+            sp,
+        };
+        let curr_loc = instr_ctx.loc;
+
+        Some(EhFnCtx {
+            base_addrs,
+            eh,
+            fde,
+            instr_ctx: RefCell::new(instr_ctx),
+            curr_loc: RefCell::new(curr_loc),
+            cie_shown: false,
+            instr_index: 0,
+        })
+    }
+
+    fn at_ip(&mut self, ip: u64) {
+        if !self.cie_shown {
+            let mut iter = self.fde.cie().instructions(&self.eh, self.base_addrs);
+            while let Ok(Some(instr)) = iter.next() {
+                self.print_instr(instr);
+            }
+            self.cie_shown = true;
+        }
+
+        let mut iter = self.fde.instructions(&self.eh, self.base_addrs);
+        for _ in 0..self.instr_index {
+            if iter.next().ok().flatten().is_none() {
+                return;
+            }
+        }
+
+        while let Ok(Some(instr)) = iter.next() {
+            if ip < *self.curr_loc.borrow() {
+                break;
+            }
+            self.print_instr(instr);
+            self.instr_index += 1;
+        }
+    }
+
+    fn print_instr(
+        &self,
+        instr: CallFrameInstruction<EndianSlice<'a, LittleEndian>>,
+    ) {
+        match instr {
+            CallFrameInstruction::Nop => (),
+            CallFrameInstruction::AdvanceLoc { delta } => {
+                *self.curr_loc.borrow_mut() += delta as u64;
+            },
+            _ => {
+                print!("\x1b[35m[CFI]\x1b[0m ");
+                self.instr_ctx.borrow_mut().print(instr.clone());
+            }
+        }
     }
 }

@@ -163,6 +163,10 @@ pub struct FnArgs {
     /// always parsed as hexadecimal, and can start with `0x` or not.
     #[arg(long, short = 'a')]
     pub address: bool,
+
+    /// Superimpose call-frame information extracted from `.eh_frame`.
+    #[arg(long)]
+    pub cfi: bool,
 }
 
 #[derive(Args, Debug, Clone, Default)]

@@ -181,35 +181,38 @@ fn print_fde_header<R: Reader<Offset = usize>>(
     }
 }
 
-struct EhInstrContext {
-    cfa_reg: Register,
-    cfa_off: u64,
-    loc: u64,
-    data_align: i64,
-    sp: SizePrint,
+pub struct EhInstrContext {
+    pub cfa_reg: Register,
+    pub cfa_off: u64,
+    pub loc: u64,
+    pub data_align: i64,
+    pub sp: SizePrint,
 }
 
 impl EhInstrContext {
-    fn print<R: Reader>(&mut self, instr: CallFrameInstruction<R>) {
+    pub fn print<R: Reader>(&mut self, instr: CallFrameInstruction<R>) {
         use CallFrameInstruction::*;
 
         match instr {
             SetLoc { address } => {
                 println!(
-                    "DW_CFA_set_loc({address})\tloc = {address}",
+                    "{:30} loc = {address}",
+                    format!("DW_CFA_set_loc({address})")
                 );
             },
             AdvanceLoc { delta } => {
                 self.loc += delta as u64;
                 println!(
-                    "DW_CFA_advance_loc({delta})\tloc += {delta}\tloc = {}",
+                    "{:30} loc += {delta}\tloc = {}",
+                    format!("DW_CFA_advance_loc({delta})"),
                     self.sp.hex(self.loc),
                 );
             },
             DefCfa { register, offset } => {
                 println!(
-                    "DW_CFA_def_cfa({}, {offset})\t\tcfa = %{} + {offset}",
-                    register.0, register_name(register),
+                    "{:30} cfa = %{} + {offset}",
+                    format!("DW_CFA_def_cfa({}, {offset})", register.0),
+                    register_name(register),
                 );
                 self.cfa_reg = register;
                 self.cfa_off = offset;
@@ -221,14 +224,16 @@ impl EhInstrContext {
             },
             DefCfaRegister { register } => {
                 println!(
-                    "DW_CFA_def_cfa_register({})\tcfa = %{} + \x1b[90m{}\x1b[0m",
-                    register.0, register_name(register), self.cfa_off,
+                    "{:30} cfa = %{} + \x1b[90m{}\x1b[0m",
+                    format!("DW_CFA_def_cfa_register({})", register.0),
+                    register_name(register), self.cfa_off,
                 );
                 self.cfa_reg = register;
             },
             DefCfaOffset { offset } => {
                 println!(
-                    "DW_CFA_def_cfa_offset({offset})\tcfa = \x1b[90m%{}\x1b[0m + {offset}",
+                    "{:30} cfa = \x1b[90m%{}\x1b[0m + {offset}",
+                    format!("DW_CFA_def_cfa_offset({offset})"),
                     register_name(self.cfa_reg),
                 );
                 self.cfa_off = offset;
@@ -241,23 +246,26 @@ impl EhInstrContext {
             },
             Undefined { register } => {
                 println!(
-                    "DW_CFA_undefined({})\t\t%{} @ ??? (unrecoverable)",
-                    register.0, register_name(register),
+                    "{:30} %{} @ ??? (unrecoverable)",
+                    format!("DW_CFA_undefined({})", register.0),
+                    register_name(register),
                 );
             },
             SameValue { register } => {
                 println!(
-                    "DW_CFA_same_value({})\t\t%{} untouched",
-                    register.0, register_name(register),
+                    "{:30} %{} untouched",
+                    format!("DW_CFA_same_value({})", register.0),
+                    register_name(register),
                 );
             },
             Offset { register, factored_offset } => {
                 let off = factored_offset as i64 * self.data_align;
                 println!(
-                    "DW_CFA_offset({}, {factored_offset})\t\t%{} @ cfa {} {}",
-                    register.0, register_name(register),
+                    "{:30} %{} @ cfa {} {}",
+                    format!("DW_CFA_offset({}, {factored_offset})", register.0),
+                    register_name(register),
                     if off < 0 { "−" } else { "+" },
-                    off.abs()
+                    off.abs(),
                 );
             },
             OffsetExtendedSf { register, factored_offset } => {
@@ -277,8 +285,8 @@ impl EhInstrContext {
             },
             Register { dest_register, src_register } => {
                 println!(
-                    "DW_CFA_register({}, {})\t%{} = %{}",
-                    dest_register.0, src_register.0,
+                    "{:30} %{} = %{}",
+                    format!("DW_CFA_register({}, {})", dest_register.0, src_register.0),
                     register_name(dest_register), register_name(src_register),
                 );
             },
@@ -297,8 +305,9 @@ impl EhInstrContext {
             },
             Restore { register } => {
                 println!(
-                    "DW_CFA_restore({})\t\t%{} @ (initial rule)",
-                    register.0, register_name(register),
+                    "{:30} %{} @ (initial rule)",
+                    format!("DW_CFA_restore({})", register.0),
+                    register_name(register),
                 );
             },
             RememberState => println!("DW_CFA_remember_state()"),
