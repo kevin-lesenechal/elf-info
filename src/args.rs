@@ -154,6 +154,15 @@ pub struct SectionArgs {
     pub skip: Option<usize>,
 }
 
+#[derive(Clone, Copy, ValueEnum, Debug, Default)]
+pub enum Syntax {
+    /// GNU assembler (AT&T)
+    #[default]
+    Att,
+    /// Intel
+    Intel,
+}
+
 #[derive(Args, Debug)]
 pub struct FnArgs {
     #[arg()]
@@ -167,6 +176,10 @@ pub struct FnArgs {
     /// Superimpose call-frame information extracted from `.eh_frame`.
     #[arg(long)]
     pub cfi: bool,
+
+    /// Syntax to use to format the disassembly.
+    #[arg(long, value_enum, default_value_t = Syntax::Att)]
+    pub syntax: Syntax,
 }
 
 #[derive(Args, Debug, Clone, Default)]
