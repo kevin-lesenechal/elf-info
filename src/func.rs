@@ -22,7 +22,7 @@ use iced_x86::{Decoder, DecoderOptions, Formatter, FormatterOutput,
                SymbolResolver, SymbolResult};
 use rustc_demangle::demangle;
 
-use crate::args::FnArgs;
+use crate::args::{FnArgs, Syntax};
 use crate::eh::EhInstrContext;
 use crate::elf::{find_symbol, find_symbol_by_addr, symbol_file_offset};
 use crate::print::SizePrint;
@@ -60,8 +60,10 @@ pub fn do_fn(elf: &Elf, bytes: &[u8], args: &FnArgs) -> Result<()> {
 
     println!("\x1b[97m{sym_name}:\x1b[0m");
 
-    let mut opts = DisassOptions::default();
-    opts.cfi = args.cfi;
+    let opts = DisassOptions {
+        cfi: args.cfi,
+        syntax: args.syntax,
+    };
     disassemble(elf, bytes, sym.st_value, content, opts);
 
     Ok(())
@@ -116,7 +118,7 @@ impl FormatterOutput for ColorOutput {
 
 #[derive(Default)]
 struct DisassOptions {
-    intel_syntax: bool,
+    syntax: Syntax,
     cfi: bool,
 }
 
@@ -148,16 +150,9 @@ fn disassemble(elf: &Elf, bytes: &[u8], ip: u64, content: &[u8], opts: DisassOpt
     });
 
     let mut output = ColorOutput;
-    let mut formatter: Box<dyn Formatter> = if opts.intel_syntax {
-        Box::new(IntelFormatter::with_options(
-            Some(sym_resolver),
-            None,
-        ))
-    } else {
-        Box::new(GasFormatter::with_options(
-            Some(sym_resolver),
-            None,
-        ))
+    let mut formatter: Box<dyn Formatter> = match opts.syntax {
+        Syntax::Intel => Box::new(IntelFormatter::with_options(Some(sym_resolver), None)),
+        Syntax::Att => Box::new(GasFormatter::with_options(Some(sym_resolver), None)),
     };
     formatter.options_mut().set_first_operand_char_index(8);
     formatter.options_mut().set_uppercase_hex(false);
