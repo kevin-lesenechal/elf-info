@@ -24,7 +24,7 @@ name = "elf"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.0", features = ["derive"] }
+clap = { version = "4.0", features = ["derive", "env"] }
 goblin = { version = "0.6.1", features = ["elf64"] }
 gimli = "0.27.2"
 anyhow = "1.0"

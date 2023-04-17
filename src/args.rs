@@ -178,7 +178,7 @@ pub struct FnArgs {
     pub cfi: bool,
 
     /// Syntax to use to format the disassembly.
-    #[arg(long, value_enum, default_value_t = Syntax::Att)]
+    #[arg(long, value_enum, env = "ELF_INFO_ASM_SYNTAX", default_value_t)]
     pub syntax: Syntax,
 }
 
