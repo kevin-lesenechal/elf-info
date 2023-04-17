@@ -10,7 +10,7 @@
 
 [package]
 name = "elf-info"
-version = "0.1.0"
+version = "0.2.0"
 description = "Inspect and dissect an ELF file with pretty formatting."
 authors = ["Kévin Lesénéchal <kevin.lesenechal@gmail.com>"]
 edition = "2021"
