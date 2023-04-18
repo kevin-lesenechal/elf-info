@@ -113,7 +113,8 @@ pub fn program_headers(elf: &Elf) {
 
     println!(
         "\x1b[37m{:>12} \x1b[97m│ \x1b[37m{:<w1$} \x1b[97m│ \x1b[37m{:<w1$} \x1b[97m│ \x1b[37m{:<colw$} \x1b[97m│\x1b[0m",
-        "Type", "Virt. addr.", "Phys. addr.", "Flags     Align",
+        "Type", "Virt. addr.", "Phys. addr.",
+        if container.is_big() { "Flags     Align" } else { "Flags/Align" },
         w1 = colw + 1,
     );
     println!(
@@ -138,11 +139,21 @@ pub fn program_headers(elf: &Elf) {
             paddr = sp.hex(ph.p_paddr),
         );
         println!(
-            "\x1b[97m│\x1b[0m {}{}{}       2^{:<7} \x1b[97m│\x1b[0m",
+            "\x1b[97m│\x1b[0m {}{}{}{}{} \x1b[97m│\x1b[0m",
             if ph.is_read() { "r" } else { "-" },
             if ph.is_write() { "w" } else { "-" },
             if ph.is_executable() { "x" } else { "-" },
-            64 - ph.p_align.leading_zeros() - 1,
+            if container.is_big() { "       " } else { "    " },
+            if ph.p_align == 0 {
+                if container.is_big() {
+                    "    ---    ".to_owned()
+                } else {
+                    "--- ".to_owned()
+                }
+            } else {
+                format!("2^{:<w$}", 64 - ph.p_align.leading_zeros() - 1,
+                        w = if container.is_big() { 7 } else { 2 })
+            },
         );
         print!(
             "{:>12} \x1b[97m│\x1b[0m {msize}  \x1b[97m│\x1b[0m  {fsize} ",
