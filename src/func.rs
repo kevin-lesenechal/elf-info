@@ -30,18 +30,18 @@ use crate::sections::find_section;
 use crate::sym::sym_type;
 
 pub fn do_fn(elf: &Elf, bytes: &[u8], args: &FnArgs) -> Result<()> {
-    let sym = if args.address {
+    let (sym, strtab) = if args.address {
         let addr = u64::from_str_radix(args.name.trim_start_matches("0x"), 16)
             .context(anyhow!("couldn't parse memory address '{}'", args.name))?;
-        find_symbol_by_addr(&elf.syms, addr)
+        find_symbol_by_addr(&elf.syms, addr).zip(Some(&elf.strtab))
     } else {
-        find_symbol(&elf.syms, &elf.strtab, &args.name)
-            .or_else(|| find_symbol(&elf.dynsyms, &elf.dynstrtab, &args.name))
+        find_symbol(&elf.syms, &elf.strtab, &args.name).zip(Some(&elf.strtab))
+            .or_else(|| find_symbol(&elf.dynsyms, &elf.dynstrtab, &args.name).zip(Some(&elf.dynstrtab)))
     }.ok_or_else(||
         anyhow!("couldn't find any symbol matching {:?}", args.name)
     )?;
 
-    let sym_name = elf.strtab.get_at(sym.st_name).unwrap();
+    let sym_name = strtab.get_at(sym.st_name).unwrap();
 
     if sym.st_type() != STT_FUNC {
         println!(
