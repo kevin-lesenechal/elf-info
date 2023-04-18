@@ -10,6 +10,7 @@
 
 use goblin::elf::{Elf, ProgramHeader, Sym, Symtab};
 use goblin::strtab::Strtab;
+use rustc_demangle::demangle;
 
 pub fn symbol_file_offset(elf: &Elf, sym_name: &str) -> Option<u64> {
     // TODO: handle stripped binaries
@@ -25,6 +26,11 @@ pub fn find_symbol(tab: &Symtab, strtab: &Strtab, name: &str) -> Option<Sym> {
         .find(|sym| {
             strtab.get_at(sym.st_name).map(|n| n == name).unwrap_or(false)
         })
+        .or_else(|| tab.iter().find(|sym| {
+            strtab.get_at(sym.st_name)
+                .map(|n| demangle(n).to_string() == name)
+                .unwrap_or(false)
+        }))
 }
 
 pub fn find_symbol_by_addr(tab: &Symtab, addr: u64) -> Option<Sym> {
