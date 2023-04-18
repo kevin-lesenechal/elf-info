@@ -13,7 +13,8 @@ use goblin::strtab::Strtab;
 
 pub fn symbol_file_offset(elf: &Elf, sym_name: &str) -> Option<u64> {
     // TODO: handle stripped binaries
-    let sym = find_symbol(&elf.syms, &elf.strtab, sym_name)?;
+    let sym = find_symbol(&elf.syms, &elf.strtab, sym_name)
+        .or_else(|| find_symbol(&elf.dynsyms, &elf.dynstrtab, sym_name))?;
     let ph = ph_by_vaddr(elf, sym.st_value)?;
 
     Some(ph.p_offset + (sym.st_value - ph.p_vaddr))
