@@ -161,6 +161,9 @@ pub fn addr_to_sym(symtab: &Symtab, addr: u64) -> Option<Sym> {
     let mut curr_sym = iter.next()?;
 
     for sym in iter {
+        if !sym.is_function() {
+            continue;
+        }
         if sym.st_value <= addr && sym.st_value > curr_sym.st_value {
             curr_sym = sym;
         }
