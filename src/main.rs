@@ -42,6 +42,13 @@ fn main() {
 }
 
 fn run(args: &Options) -> Result<()> {
+    if let Some(shell) = args.completion {
+        let mut cmd = <Options as clap::CommandFactory>::command();
+        let bin = env!("CARGO_BIN_NAME");
+        clap_complete::generate(shell, &mut cmd, bin, &mut std::io::stdout());
+        return Ok(());
+    }
+
     let elf_path = args.elf.clone().or_else(
         || std::env::var_os("ELF").map(|s| s.into())
     ).ok_or_else(
@@ -71,7 +78,7 @@ fn run(args: &Options) -> Result<()> {
         Command::ProgramHeader => program_headers(&elf),
         Command::Sections => all_sections(&elf),
         Command::Section(opts) => one_section(&elf, bytes, opts)?,
-        Command::Symbols(opts) => all_symbols(&elf, opts),
+        Command::Symbols(opts) => all_symbols(&elf, &opts),
         Command::Fn(opts) => do_fn(&elf, bytes, opts)?,
         Command::Eh(opts) => eh(&elf, bytes, opts.clone())?,
         _ => todo!(),
