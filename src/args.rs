@@ -18,6 +18,10 @@ pub struct Options {
     #[arg()]
     pub elf: Option<PathBuf>,
 
+    /// Generate shell completions
+    #[arg(long)]
+    pub completion: Option<clap_complete::Shell>,
+
     #[command(subcommand)]
     pub command: Option<Command>,
 }
